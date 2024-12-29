@@ -187,6 +187,28 @@ export class NftCollection implements Contract {
         });
     }
 
+    async sendChangeContent(
+        provider: ContractProvider,
+        sender: Sender,
+        value: bigint,
+        content: {
+            collectionContent: string;
+            commonContent: string;
+        },
+    ) {
+        const contentCell = beginCell();
+        const collectionContent = encodeOffChainContent(content.collectionContent);
+        const commonContent = beginCell();
+        commonContent.storeBuffer(Buffer.from(content.commonContent));
+        contentCell.storeRef(collectionContent);
+        contentCell.storeRef(commonContent.asCell());
+        await provider.internal(sender, {
+            value,
+            sendMode: SendMode.PAY_GAS_SEPARATELY,
+            body: beginCell().storeUint(6, 32).storeUint(0, 64).storeRef(contentCell).endCell(),
+        });
+    }
+
     async sendWithdraw(provider: ContractProvider, via: Sender, amount: bigint, toAddr: Address) {
         await provider.internal(via, {
             value: toNano('0.01'),
