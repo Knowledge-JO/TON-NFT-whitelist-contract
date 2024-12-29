@@ -1,0 +1,112 @@
+#include "imports/stdlib.fc";
+
+
+const gas_consumption = 15000000; ;; 0.015
+
+
+(slice, int, slice) load_data() inline {
+    slice ds = get_data().begin_parse();
+
+    return (
+        ds~load_msg_addr(), ;; whitelised address
+        ds~load_int(4), ;; whitelised 0 false, -1 true
+        ds~load_msg_addr() ;; nft collection address
+    );
+}
+
+
+() save_data(slice whitelisted_address, int whitelisted, slice nft_collection_address) impure inline {
+    set_data(begin_cell()
+        .store_slice(whitelisted_address)
+        .store_int(whitelisted, 4)
+        .store_slice(nft_collection_address)
+        .end_cell());   
+}
+
+
+() on_bounce(slice in_msg_body) impure {
+    in_msg_body~skip_bits(32); ;; 0xFFFFFFFF
+
+    int op = in_msg_body~load_uint(32);
+
+    throw_unless(700, op == 1);
+
+    var (whitelisted_address, _, _) = load_data();
+
+    var msg = begin_cell()
+    .store_uint(0x18, 6)
+    .store_slice(whitelisted_address)
+    .store_coins(0)
+    .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1);
+
+    send_raw_message(msg.end_cell(), 64); 
+    
+}
+
+() recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
+    if(in_msg_body.slice_empty?()) {
+        return ();
+    }
+
+    slice cs = in_msg_full.begin_parse();
+    int flags = cs~load_uint(4);
+
+
+    if(flags & 1) { ;; handle bounce
+        on_bounce(in_msg_body);
+        return ();
+    }
+
+    slice sender_address = cs~load_msg_addr();
+
+    int op = in_msg_body~load_uint(32);
+    
+    var (whitelisted_address, whitelisted, nft_collection_address) = load_data();
+
+    if(op == 10) {
+        ;; whitelist
+        throw_unless(500, equal_slices_bits(sender_address, nft_collection_address));
+
+        whitelisted = -1;
+
+        save_data(whitelisted_address, whitelisted, nft_collection_address);
+
+        return ();
+    }
+
+
+    if(op == 11) {
+
+        throw_unless(500, equal_slices_bits(sender_address, whitelisted_address));
+
+        throw_unless(501, whitelisted == -1);
+
+        cell body = begin_cell()
+            .store_uint(1, 32) ;; op
+            .store_uint(0, 64) ;; query id
+            .store_slice(whitelisted_address)
+            .store_int(whitelisted, 4)
+            .store_slice(in_msg_body)
+            .end_cell();
+
+        cell msg = begin_cell()
+            .store_uint(0x18, 6)
+            .store_slice(nft_collection_address)
+            .store_coins(0)
+            .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1)
+            .store_uint(1, 1)
+            .store_ref(body)
+            .end_cell();
+
+        send_raw_message(msg, 64); 
+
+        return ();
+    }
+
+     throw(0xffff);
+}
+
+
+(slice, int, slice) get_whitelist_data() method_id {
+    return load_data();
+}

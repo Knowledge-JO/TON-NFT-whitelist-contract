@@ -1,0 +1,39 @@
+{
+    "name": "AT #01",
+    "description": "A unique NFT from the 20000 collection",
+    "image": "ipfs://bafybeiccvudlueedqwsdk4ynh7tik7mdaq5q4wihwaycdqbfpqxsnp2ob4/1.jpg",
+    "attributes": [
+        {
+            "trait_type": "Background",
+            "value": "teal"
+        },
+        {
+            "trait_type": "Headwear",
+            "value": "none"
+        },
+        {
+            "trait_type": "Eyewear",
+            "value": "none"
+        },
+        {
+            "trait_type": "Clothing",
+            "value": "sweat shirt (pink)"
+        },
+        {
+            "trait_type": "Accessories",
+            "value": "none"
+        },
+        {
+            "trait_type": "Expression",
+            "value": "smiling"
+        },
+        {
+            "trait_type": "Skin Color",
+            "value": "fair"
+        },
+        {
+            "trait_type": "Special Feature",
+            "value": "none"
+        }
+    ]
+}
